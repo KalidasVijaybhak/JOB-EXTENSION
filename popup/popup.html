@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Autocomplete Pro</title>
+  <link rel="stylesheet" href="popup.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-logo">J</div>
+        <div class="brand-info">
+          <h1>Job Autocomplete Pro</h1>
+          <span class="status-badge" id="status-badge">Ready to Autofill</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button type="button" id="btn-dock" class="btn-dock-icon" title="Dock to page">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="17" x2="12" y2="22"></line>
+            <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path>
+          </svg>
+        </button>
+        <label class="switch">
+          <input type="checkbox" id="extension-toggle" checked>
+          <span class="slider round"></span>
+        </label>
+      </div>
+    </header>
+
+    <!-- Site Status Bar -->
+    <div class="site-bar" id="site-bar" style="display:none">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="site-bar-icon"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <span class="site-bar-host" id="site-bar-host"></span>
+      <button type="button" class="site-bar-btn" id="btn-site-toggle"></button>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <nav class="tabs-nav">
+      <button class="tab-btn active" data-tab="tab-personal">Profile & Contact</button>
+      <button class="tab-btn" data-tab="tab-experience">Experience</button>
+      <button class="tab-btn" data-tab="tab-education">Education</button>
+      <button class="tab-btn" data-tab="tab-skills">Skills & Certs</button>
+      <button class="tab-btn" data-tab="tab-custom">Custom</button>
+    </nav>
+
+    <!-- App Content -->
+    <main class="app-main">
+      <form id="profile-form">
+        <!-- Tab: Personal Profile & Contact -->
+        <section id="tab-personal" class="tab-content active">
+          <div class="section-title">Name & Contact</div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="firstName">First Name</label>
+              <input type="text" id="firstName" name="firstName">
+            </div>
+            <div class="form-group">
+              <label for="lastName">Last Name</label>
+              <input type="text" id="lastName" name="lastName">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="fullName">Full Name</label>
+            <input type="text" id="fullName" name="fullName">
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="email">Email Address</label>
+              <input type="email" id="email" name="email">
+            </div>
+            <div class="form-group">
+              <label for="phone">Phone Number</label>
+              <input type="tel" id="phone" name="phone">
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="phoneDeviceType">Phone Device Type</label>
+              <input type="text" id="phoneDeviceType" name="phoneDeviceType" placeholder="Mobile">
+            </div>
+            <div class="form-group">
+              <label for="phoneCountryCode">Phone Country Code</label>
+              <input type="text" id="phoneCountryCode" name="phoneCountryCode" placeholder="India (+91)">
+            </div>
+          </div>
+
+          <div class="section-title margin-top-lg">Address</div>
+          <div class="form-group">
+            <label for="addressLine1">Address Line 1</label>
+            <input type="text" id="addressLine1" name="addressLine1">
+          </div>
+          <div class="form-group">
+            <label for="addressLine2">Address Line 2</label>
+            <input type="text" id="addressLine2" name="addressLine2">
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="locationCity">City</label>
+              <input type="text" id="locationCity" name="locationCity">
+            </div>
+            <div class="form-group">
+              <label for="locationState">State / Region</label>
+              <input type="text" id="locationState" name="locationState">
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="locationZip">Postal Code</label>
+              <input type="text" id="locationZip" name="locationZip">
+            </div>
+            <div class="form-group">
+              <label for="locationCountry">Country</label>
+              <input type="text" id="locationCountry" name="locationCountry">
+            </div>
+          </div>
+
+          <div class="section-header-row margin-top-lg">
+            <div class="section-title">Websites / Links</div>
+            <button type="button" class="btn-secondary btn-sm" id="btn-add-website">+ Add Website</button>
+          </div>
+          <div id="websites-container" class="dynamic-list"></div>
+        </section>
+
+        <!-- Tab: Experience -->
+        <section id="tab-experience" class="tab-content">
+          <div class="section-header-row">
+            <div class="section-title">Work Experience</div>
+            <button type="button" class="btn-secondary btn-sm" id="btn-add-experience">+ Add Experience</button>
+          </div>
+          <p class="section-desc">Add multiple roles. Suggestions will show all matching entries.</p>
+          <div id="experience-container" class="dynamic-list"></div>
+        </section>
+
+        <!-- Tab: Education -->
+        <section id="tab-education" class="tab-content">
+          <div class="section-header-row">
+            <div class="section-title">Education</div>
+            <button type="button" class="btn-secondary btn-sm" id="btn-add-education">+ Add Education</button>
+          </div>
+          <div id="education-container" class="dynamic-list"></div>
+        </section>
+
+        <!-- Tab: Skills, Certs & Languages -->
+        <section id="tab-skills" class="tab-content">
+          <div class="section-title">Skills & Summary</div>
+          <div class="form-group">
+            <label for="skills">Skills (Comma separated)</label>
+            <textarea id="skills" name="skills" rows="3"
+              placeholder="JavaScript, React, Project Management..."></textarea>
+          </div>
+          <div class="form-group">
+            <label for="summary">Resume / Bio Summary</label>
+            <textarea id="summary" name="summary" rows="3"></textarea>
+          </div>
+
+          <div class="section-header-row margin-top-lg">
+            <div class="section-title">Certifications</div>
+            <button type="button" class="btn-secondary btn-sm" id="btn-add-cert">+ Add Cert</button>
+          </div>
+          <div id="certs-container" class="dynamic-list"></div>
+
+          <div class="section-header-row margin-top-lg">
+            <div class="section-title">Languages</div>
+            <button type="button" class="btn-secondary btn-sm" id="btn-add-language">+ Add Language</button>
+          </div>
+          <div id="languages-container" class="dynamic-list"></div>
+        </section>
+
+        <!-- Tab: Custom Fields -->
+        <section id="tab-custom" class="tab-content">
+          <div class="section-header-row">
+            <div class="section-title">Custom Fields</div>
+            <button type="button" class="btn-secondary btn-sm" id="btn-add-custom">+ Add Field</button>
+          </div>
+          <p class="section-desc">Define fields specific to certain job boards (e.g., Expected Salary, Notice Period).
+          </p>
+          <div id="custom-fields-container" class="dynamic-list"></div>
+        </section>
+      </form>
+    </main>
+
+    <!-- Footer Controls -->
+    <footer class="app-footer">
+      <div class="footer-left">
+        <button type="button" class="btn-link" id="btn-import">Import</button>
+        <button type="button" class="btn-link" id="btn-export">Export</button>
+        <input type="file" id="import-file" accept=".json" style="display: none;">
+      </div>
+      <div class="footer-right">
+        <button type="button" class="btn-secondary" id="btn-clear">Clear</button>
+        <button type="button" class="btn-primary" id="btn-save">Save Profile</button>
+      </div>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast">Profile updated!</div>
+  <script src="popup.js"></script>
+</body>
+
+</html>

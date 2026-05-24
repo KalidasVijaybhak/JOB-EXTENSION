@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mock Job Application Form</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+    }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .form-container {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      width: 100%;
+      max-width: 600px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    h2 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 24px;
+      font-weight: 700;
+    }
+    .desc {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .form-section {
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+      margin-top: 24px;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--primary);
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: var(--text-muted);
+    }
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="url"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      box-sizing: border-box;
+      background-color: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+    textarea {
+      resize: vertical;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    button[type="submit"] {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      width: 100%;
+      margin-top: 16px;
+    }
+    button[type="submit"]:hover {
+      background-color: var(--primary-hover);
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>Apply for Software Engineer</h2>
+    <p class="desc">Fill out the fields below. Open the extension popup, enter your information, and click save. Then focus on any field here to see smart auto-fill in action.</p>
+    
+    <form id="mock-job-form" onsubmit="event.preventDefault(); alert('Form submitted successfully!');">
+      <!-- Personal Details -->
+      <div class="form-section">
+        <div class="section-title">Personal Details</div>
+        <div class="form-group">
+          <label for="full_name">Full Name</label>
+          <input type="text" id="full_name" name="name" placeholder="First and last name">
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="first_name_field">First Name</label>
+            <input type="text" id="first_name_field" name="first-name" placeholder="John">
+          </div>
+          <div class="form-group">
+            <label for="last_name_field">Last Name</label>
+            <input type="text" id="last_name_field" name="last-name" placeholder="Doe">
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="email_addr">Email Address</label>
+            <input type="email" id="email_addr" name="email" placeholder="you@example.com">
+          </div>
+          <div class="form-group">
+            <label for="tel_num">Phone Number</label>
+            <input type="tel" id="tel_num" name="phone-number" placeholder="+1 (555) 000-0000">
+          </div>
+        </div>
+      </div>
+
+      <!-- Links -->
+      <div class="form-section">
+        <div class="section-title">Links & Web Presence</div>
+        <div class="form-group">
+          <label for="li_profile">LinkedIn URL</label>
+          <input type="url" id="li_profile" name="linkedin-url" placeholder="https://linkedin.com/in/...">
+        </div>
+        <div class="form-group">
+          <label for="gh_profile">GitHub Profile</label>
+          <input type="url" id="gh_profile" name="github" placeholder="https://github.com/...">
+        </div>
+        <div class="form-group">
+          <label for="port_url">Portfolio Website</label>
+          <input type="url" id="port_url" name="portfolio" placeholder="https://...">
+        </div>
+      </div>
+
+      <!-- Education & Experience -->
+      <div class="form-section">
+        <div class="section-title">Education & Experience</div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="university_id">University / College</label>
+            <input type="text" id="university_id" name="school" placeholder="Harvard, Stanford, etc.">
+          </div>
+          <div class="form-group">
+            <label for="degree_type">Degree</label>
+            <input type="text" id="degree_type" name="degree-name" placeholder="B.S. Computer Science">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="most_recent_role">Current Job Title</label>
+          <input type="text" id="most_recent_role" name="current-job" placeholder="Software Engineer">
+        </div>
+        <div class="form-group">
+          <label for="most_recent_company">Current Employer</label>
+          <input type="text" id="most_recent_company" name="company" placeholder="Acme Corp">
+        </div>
+      </div>
+
+      <!-- Custom Fields -->
+      <div class="form-section">
+        <div class="section-title">Additional Information</div>
+        <div class="form-group">
+          <label for="notice_period_q">Notice Period (Days)</label>
+          <input type="text" id="notice_period_q" name="notice_period" placeholder="e.g. 30 days">
+        </div>
+        <div class="form-group">
+          <label for="cover_letter_box">Cover Letter / Message to Hiring Manager</label>
+          <textarea id="cover_letter_box" name="cover_letter" rows="5" placeholder="Write a short message or cover letter..."></textarea>
+        </div>
+      </div>
+
+      <button type="submit">Submit Application</button>
+    </form>
+  </div>
+</body>
+</html>
