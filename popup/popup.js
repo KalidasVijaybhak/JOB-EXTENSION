@@ -17,13 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const toast = document.getElementById('toast');
   const profileForm = document.getElementById('profile-form');
 
-  extensionToggle.addEventListener('change', (e) => {
-    const isEnabled = e.target.checked;
-    chrome.storage.sync.set({ extensionEnabled: isEnabled }, () => {
-      statusBadge.textContent = isEnabled ? 'Ready to Autofill' : 'Autofill Paused';
-      statusBadge.style.opacity = isEnabled ? '1' : '0.7';
-    });
-  });
+  // Toggle wired after hostname is resolved (see initToggle below)
 
   function showToast(msg) {
     toast.textContent = msg;
@@ -57,16 +51,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Add Row Functions
   document.getElementById('btn-add-website').addEventListener('click', () => addWebsite());
-  function addWebsite(url = '', type = '') {
+  function addWebsite(url = '', type = '', customLabel = '') {
     const meta = WEBSITE_DEFAULTS.find(d => d.type === type);
-    const label = meta ? meta.label : 'Website';
     const placeholder = meta ? meta.placeholder : 'https://...';
-    createCard('websites-container', `
-      <div class="form-group" style="margin:0">
-        <label>${escapeHtml(label)}</label>
-        <input type="url" class="site-url" data-type="${escapeHtml(type)}" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(url)}">
-      </div>
-    `);
+    if (meta) {
+      createCard('websites-container', `
+        <div class="form-group" style="margin:0">
+          <label>${escapeHtml(meta.label)}</label>
+          <input type="url" class="site-url" data-type="${escapeHtml(type)}" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(url)}">
+        </div>
+      `);
+    } else {
+      createCard('websites-container', `
+        <div class="form-group" style="margin:0">
+          <input type="text" class="site-label" placeholder="Label (e.g. GitHub, Dribbble)" value="${escapeHtml(customLabel)}">
+          <input type="url" class="site-url" data-type="" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(url)}" style="margin-top:6px">
+        </div>
+      `);
+    }
   }
 
   document.getElementById('btn-add-experience').addEventListener('click', () => addExperience());
@@ -92,6 +94,10 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="grid-2">
         <div class="form-group"><label>Degree</label><input type="text" class="edu-degree" value="${escapeHtml(data.degree || '')}"></div>
         <div class="form-group"><label>Grad Year</label><input type="text" class="edu-grad" value="${escapeHtml(data.gradYear || '')}"></div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label>CGPA / Grade / Result</label><input type="text" class="edu-cgpa" placeholder="e.g. 8.5 / A / First Class" value="${escapeHtml(data.cgpa || '')}"></div>
+        <div class="form-group"><label>Percentage</label><input type="text" class="edu-percentage" placeholder="e.g. 85%" value="${escapeHtml(data.percentage || '')}"></div>
       </div>
     `);
   }
@@ -128,51 +134,56 @@ document.addEventListener('DOMContentLoaded', () => {
     `);
   }
 
-  // Site status bar
-  const siteBar    = document.getElementById('site-bar');
-  const siteHost   = document.getElementById('site-bar-host');
-  const sitToggle  = document.getElementById('btn-site-toggle');
+  // Toggle: per-site when on a real page, global otherwise
   let currentHostname = '';
 
-  function renderSiteBtn(isDisabled) {
-    if (isDisabled) {
-      sitToggle.textContent = 'Disabled for site';
-      sitToggle.className = 'site-bar-btn is-disabled';
-    } else {
-      sitToggle.textContent = 'Active on site';
-      sitToggle.className = 'site-bar-btn is-active';
-    }
-  }
-
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    if (!tabs[0] || !tabs[0].url) return;
-    let hostname;
-    try { hostname = new URL(tabs[0].url).hostname; } catch (e) { return; }
-    if (!hostname || hostname.startsWith('chrome')) return;
-
-    currentHostname = hostname;
-    siteHost.textContent = hostname;
-    siteBar.style.display = 'flex';
-
-    chrome.storage.sync.get(['disabledSites'], (r) => {
-      renderSiteBtn((r.disabledSites || []).includes(hostname));
-    });
-  });
-
-  sitToggle.addEventListener('click', () => {
-    if (!currentHostname) return;
-    chrome.storage.sync.get(['disabledSites'], (r) => {
-      const sites = r.disabledSites || [];
-      const idx = sites.indexOf(currentHostname);
-      if (idx >= 0) {
-        sites.splice(idx, 1);
-        renderSiteBtn(false);
-      } else {
-        sites.push(currentHostname);
-        renderSiteBtn(true);
+  function initToggle() {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      let hostname = '';
+      if (tabs[0] && tabs[0].url) {
+        try {
+          const h = new URL(tabs[0].url).hostname;
+          if (h && !h.startsWith('chrome')) hostname = h;
+        } catch (e) {}
       }
-      chrome.storage.sync.set({ disabledSites: sites });
+      currentHostname = hostname;
+
+      chrome.storage.sync.get(['extensionEnabled', 'disabledSites'], (r) => {
+        if (hostname) {
+          const siteDisabled = (r.disabledSites || []).includes(hostname);
+          extensionToggle.checked = !siteDisabled;
+          statusBadge.textContent = siteDisabled ? `Paused on ${hostname}` : `Active on ${hostname}`;
+          statusBadge.style.opacity = siteDisabled ? '0.7' : '1';
+        } else {
+          const globalEnabled = r.extensionEnabled !== false;
+          extensionToggle.checked = globalEnabled;
+          statusBadge.textContent = globalEnabled ? 'Ready to Autofill' : 'Autofill Paused';
+          statusBadge.style.opacity = globalEnabled ? '1' : '0.7';
+        }
+      });
     });
+  }
+  initToggle();
+
+  extensionToggle.addEventListener('change', (e) => {
+    const isEnabled = e.target.checked;
+    if (currentHostname) {
+      chrome.storage.sync.get(['disabledSites'], (r) => {
+        const sites = r.disabledSites || [];
+        const idx = sites.indexOf(currentHostname);
+        if (isEnabled && idx >= 0) sites.splice(idx, 1);
+        else if (!isEnabled && idx < 0) sites.push(currentHostname);
+        chrome.storage.sync.set({ disabledSites: sites }, () => {
+          statusBadge.textContent = isEnabled ? `Active on ${currentHostname}` : `Paused on ${currentHostname}`;
+          statusBadge.style.opacity = isEnabled ? '1' : '0.7';
+        });
+      });
+    } else {
+      chrome.storage.sync.set({ extensionEnabled: isEnabled }, () => {
+        statusBadge.textContent = isEnabled ? 'Ready to Autofill' : 'Autofill Paused';
+        statusBadge.style.opacity = isEnabled ? '1' : '0.7';
+      });
+    }
   });
 
   // Dock button
@@ -200,10 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Load and Populate
   function loadProfile() {
-    chrome.storage.sync.get(['job_profile', 'extensionEnabled'], (result) => {
-      extensionToggle.checked = result.extensionEnabled !== false;
-      statusBadge.textContent = extensionToggle.checked ? 'Ready to Autofill' : 'Autofill Paused';
-
+    chrome.storage.sync.get(['job_profile'], (result) => {
       const p = result.job_profile || {};
 
       // Simple Fields
@@ -219,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
       savedWebsites.forEach(w => { if (w.type) savedByType[w.type] = w.url; });
       WEBSITE_DEFAULTS.forEach(d => addWebsite(savedByType[d.type] || '', d.type));
       savedWebsites.filter(w => !w.type || !WEBSITE_DEFAULTS.find(d => d.type === w.type))
-                   .forEach(w => addWebsite(w.url, w.type || ''));
+                   .forEach(w => addWebsite(w.url, w.type || '', w.label || ''));
       (p.experience || []).forEach(e => addExperience(e));
       (p.education || []).forEach(e => addEducation(e));
       (p.certifications || []).forEach(c => addCert(c));
@@ -238,10 +246,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (el) data[id] = el.value.trim();
     });
 
-    data.websites = Array.from(document.querySelectorAll('#websites-container .dynamic-card')).map(c => ({
-      url: c.querySelector('.site-url').value.trim(),
-      type: c.querySelector('.site-url').dataset.type || ''
-    })).filter(w => w.url);
+    data.websites = Array.from(document.querySelectorAll('#websites-container .dynamic-card')).map(c => {
+      const labelEl = c.querySelector('.site-label');
+      return {
+        url: c.querySelector('.site-url').value.trim(),
+        type: c.querySelector('.site-url').dataset.type || '',
+        label: labelEl ? labelEl.value.trim() : ''
+      };
+    }).filter(w => w.url);
     data.experience = Array.from(document.querySelectorAll('#experience-container .dynamic-card')).map(c => ({
       title: c.querySelector('.exp-title').value.trim(),
       company: c.querySelector('.exp-company').value.trim(),
@@ -254,7 +266,9 @@ document.addEventListener('DOMContentLoaded', () => {
     data.education = Array.from(document.querySelectorAll('#education-container .dynamic-card')).map(c => ({
       school: c.querySelector('.edu-school').value.trim(),
       degree: c.querySelector('.edu-degree').value.trim(),
-      gradYear: c.querySelector('.edu-grad').value.trim()
+      gradYear: c.querySelector('.edu-grad').value.trim(),
+      cgpa: c.querySelector('.edu-cgpa').value.trim(),
+      percentage: c.querySelector('.edu-percentage').value.trim()
     })).filter(e => e.school || e.degree);
 
     data.certifications = Array.from(document.querySelectorAll('#certs-container .dynamic-card')).map(c => ({

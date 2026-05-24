@@ -87,7 +87,7 @@
 
     // EXPERIENCE DESCRIPTION - covers many ATS field names
     expDescription: [
-      'description', 'job description', 'work description', 'role description',
+      'description', 'job description', 'work description', 'role description', 'Role Description',
       'responsibilities', 'key responsibilities', 'primary responsibilities', 'job responsibilities',
       'duties', 'job duties', 'key duties', 'day-to-day', 'day to day', 'daily responsibilities',
       'what did you do', 'describe your role', 'describe your experience', 'describe your responsibilities',
@@ -100,8 +100,7 @@
   };
 
   const SHADOW_STYLE = `
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    .autofill-container { background: rgba(248,252,255,0.96) !important; backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important; border: 1.5px solid rgba(191,219,254,0.9) !important; border-radius: 14px !important; box-shadow: 0 8px 32px rgba(37,99,235,0.16), 0 2px 8px rgba(15,23,42,0.08) !important; width: 288px !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; animation: popIn 0.18s cubic-bezier(0.34,1.56,0.64,1) !important; color: #0f172a !important; font-family: 'Inter', system-ui, sans-serif !important; text-align: left !important; }
+    .autofill-container { background: rgba(248,252,255,0.96) !important; backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important; border: 1.5px solid rgba(191,219,254,0.9) !important; border-radius: 14px !important; box-shadow: 0 8px 32px rgba(37,99,235,0.16), 0 2px 8px rgba(15,23,42,0.08) !important; width: 288px !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; animation: popIn 0.18s cubic-bezier(0.34,1.56,0.64,1) !important; color: #0f172a !important; font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important; text-align: left !important; }
     @keyframes popIn { from { opacity: 0; transform: scale(0.94) translateY(-6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
     .dropdown-header { padding: 10px 12px !important; background: linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(124,58,237,0.06) 100%) !important; border-bottom: 1px solid rgba(191,219,254,0.7) !important; display: flex !important; align-items: center !important; gap: 8px !important; }
     .logo { width: 20px !important; height: 20px !important; background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%) !important; border-radius: 6px !important; display: flex !important; align-items: center !important; justify-content: center !important; font-weight: 800 !important; font-size: 11px !important; color: #fff !important; box-shadow: 0 2px 8px rgba(37,99,235,0.35) !important; flex-shrink: 0 !important; }
@@ -122,7 +121,7 @@
     .dropdown-footer { padding: 7px 12px !important; background: rgba(37,99,235,0.03) !important; border-top: 1px solid rgba(191,219,254,0.6) !important; font-size: 9px !important; color: #94a3b8 !important; display: flex !important; justify-content: space-between !important; align-items: center !important; gap: 6px !important; }
     .btn-close { background: rgba(15,23,42,0.04) !important; border: 1px solid rgba(15,23,42,0.08) !important; color: #94a3b8 !important; cursor: pointer !important; font-size: 12px !important; line-height: 1 !important; padding: 0 !important; margin-left: auto !important; transition: all 0.15s !important; width: 20px !important; height: 20px !important; border-radius: 6px !important; display: flex !important; align-items: center !important; justify-content: center !important; flex-shrink: 0 !important; }
     .btn-close:hover { background: rgba(15,23,42,0.1) !important; color: #0f172a !important; }
-    .btn-disable-site { background: rgba(239,68,68,0.07) !important; border: 1px solid rgba(239,68,68,0.2) !important; color: #ef4444 !important; cursor: pointer !important; font-size: 9px !important; font-family: 'Inter', system-ui, sans-serif !important; padding: 3px 8px !important; border-radius: 99px !important; white-space: nowrap !important; transition: all 0.15s !important; font-weight: 600 !important; }
+    .btn-disable-site { background: rgba(239,68,68,0.07) !important; border: 1px solid rgba(239,68,68,0.2) !important; color: #ef4444 !important; cursor: pointer !important; font-size: 9px !important; font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important; padding: 3px 8px !important; border-radius: 99px !important; white-space: nowrap !important; transition: all 0.15s !important; font-weight: 600 !important; }
     .btn-disable-site:hover { background: rgba(239,68,68,0.15) !important; box-shadow: 0 2px 6px rgba(239,68,68,0.2) !important; }
   `;
 
@@ -133,7 +132,7 @@
     .dock-bar:active { cursor: grabbing; }
     .dock-dots { color: #bfdbfe; font-size: 14px; flex-shrink: 0; letter-spacing: 1px; line-height: 1; }
     .dock-logo { width: 18px; height: 18px; background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 10px; color: #fff; box-shadow: 0 2px 6px rgba(37,99,235,0.38); flex-shrink: 0; }
-    .dock-title { font-size: 11px; font-weight: 700; background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; flex: 1; font-family: 'Inter', system-ui, sans-serif; white-space: nowrap; overflow: hidden; }
+    .dock-title { font-size: 11px; font-weight: 700; background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; flex: 1; font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; white-space: nowrap; overflow: hidden; }
     .dock-close { background: rgba(15,23,42,0.05); border: 1px solid rgba(15,23,42,0.08); color: #94a3b8; cursor: pointer; font-size: 11px; width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; line-height: 1; flex-shrink: 0; font-family: inherit; }
     .dock-close:hover { background: #ef4444; color: #fff; border-color: #ef4444; box-shadow: 0 2px 8px rgba(239,68,68,0.3); }
     .dock-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 10; display: none; }
@@ -701,30 +700,30 @@
     });
     (p.experience || []).forEach((exp, i) => {
       const n = i + 1;
-      if (exp.title)       fields.push({ label: `Experience ${n} - Title`, value: exp.title });
-      if (exp.company)     fields.push({ label: `Experience ${n} - Company`, value: exp.company });
-      if (exp.location)    fields.push({ label: `Experience ${n} - Location`, value: exp.location });
-      if (exp.startDate)   fields.push({ label: `Experience ${n} - Start`, value: exp.startDate });
-      if (exp.endDate)     fields.push({ label: `Experience ${n} - End`, value: exp.endDate });
+      if (exp.title) fields.push({ label: `Experience ${n} - Title`, value: exp.title });
+      if (exp.company) fields.push({ label: `Experience ${n} - Company`, value: exp.company });
+      if (exp.location) fields.push({ label: `Experience ${n} - Location`, value: exp.location });
+      if (exp.startDate) fields.push({ label: `Experience ${n} - Start`, value: exp.startDate });
+      if (exp.endDate) fields.push({ label: `Experience ${n} - End`, value: exp.endDate });
       if (exp.description) fields.push({ label: `Experience ${n} - Description`, value: exp.description });
     });
     (p.education || []).forEach((edu, i) => {
       const n = i + 1;
-      if (edu.school)   fields.push({ label: `Education ${n} - School`, value: edu.school });
-      if (edu.degree)   fields.push({ label: `Education ${n} - Degree`, value: edu.degree });
+      if (edu.school) fields.push({ label: `Education ${n} - School`, value: edu.school });
+      if (edu.degree) fields.push({ label: `Education ${n} - Degree`, value: edu.degree });
       if (edu.gradYear) fields.push({ label: `Education ${n} - Grad Year`, value: edu.gradYear });
     });
     (p.certifications || []).forEach((cert, i) => {
       const n = i + 1;
-      if (cert.name)      fields.push({ label: `Cert ${n} - Name`, value: cert.name });
+      if (cert.name) fields.push({ label: `Cert ${n} - Name`, value: cert.name });
       if (cert.issueDate) fields.push({ label: `Cert ${n} - Issued`, value: cert.issueDate });
-      if (cert.expDate)   fields.push({ label: `Cert ${n} - Expires`, value: cert.expDate });
+      if (cert.expDate) fields.push({ label: `Cert ${n} - Expires`, value: cert.expDate });
     });
     (p.languages || []).forEach((lang, i) => {
       const n = i + 1;
       if (lang.language) fields.push({ label: `Language ${n}`, value: lang.language });
-      if (lang.verbal)   fields.push({ label: `Language ${n} - Verbal`, value: lang.verbal });
-      if (lang.writing)  fields.push({ label: `Language ${n} - Writing`, value: lang.writing });
+      if (lang.verbal) fields.push({ label: `Language ${n} - Verbal`, value: lang.verbal });
+      if (lang.writing) fields.push({ label: `Language ${n} - Writing`, value: lang.writing });
     });
     (p.customFields || []).forEach(cf => {
       if (cf.label && cf.value) fields.push({ label: `Custom: ${cf.label}`, value: cf.value });
@@ -788,9 +787,9 @@
 
     const onMove = (e) => {
       if (!dragging) return;
-      const newTop   = Math.max(0, Math.min(window.innerHeight - 60, e.clientY - oy));
+      const newTop = Math.max(0, Math.min(window.innerHeight - 60, e.clientY - oy));
       const newRight = Math.max(0, window.innerWidth - (e.clientX - ox) - host.offsetWidth);
-      host.style.top   = `${newTop}px`;
+      host.style.top = `${newTop}px`;
       host.style.right = `${newRight}px`;
     };
 
@@ -800,7 +799,7 @@
       overlay.style.display = 'none';
       bar.style.cursor = 'grab';
       chrome.storage.local.set({
-        dockTop:   parseInt(host.style.top)   || 70,
+        dockTop: parseInt(host.style.top) || 70,
         dockRight: parseInt(host.style.right) || 20,
       });
     };
