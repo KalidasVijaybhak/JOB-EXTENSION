@@ -7,6 +7,10 @@
   let selectedSuggestionIndex = -1;
   let suggestionItems = [];
 
+  // Dock state
+  let isDocked = false;
+  let dockPanel = null;
+
   // EXPANDED KEYWORDS WITH REGEX-FRIENDLY PATTERNS
   const KEYWORDS = {
     fullName: ['fullname', 'full name', 'your name', 'name', 'applicant name', 'candidate name', 'display name', 'legal name', 'complete name'],
@@ -80,27 +84,60 @@
 
     // RESUME/CV UPLOAD (for detection, not filling)
     resume: ['resume', 'cv', 'curriculum vitae', 'upload resume', 'attach resume'],
+
+    // EXPERIENCE DESCRIPTION - covers many ATS field names
+    expDescription: [
+      'description', 'job description', 'work description', 'role description',
+      'responsibilities', 'key responsibilities', 'primary responsibilities', 'job responsibilities',
+      'duties', 'job duties', 'key duties', 'day-to-day', 'day to day', 'daily responsibilities',
+      'what did you do', 'describe your role', 'describe your experience', 'describe your responsibilities',
+      'achievements', 'accomplishments', 'key achievements', 'contributions',
+      'summary of experience', 'experience summary', 'role summary', 'position summary',
+      'additional details', 'more details', 'elaborate', 'tell us about your experience',
+      'work performed', 'tasks performed', 'scope of work', 'work scope',
+      'about this role', 'about your role', 'role details', 'position details',
+    ],
   };
 
   const SHADOW_STYLE = `
-    .autofill-container { background: rgba(15, 23, 42, 0.96) !important; backdrop-filter: blur(10px) !important; border: 1px solid rgba(99, 102, 241, 0.4) !important; border-radius: 12px !important; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5) !important; width: 280px !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; animation: popIn 0.15s cubic-bezier(0.34, 1.56, 0.64, 1) !important; color: #f8fafc !important; font-family: 'Inter', system-ui, sans-serif !important; text-align: left !important; }
-    @keyframes popIn { from { opacity: 0; transform: scale(0.95) translateY(-5px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-    .dropdown-header { padding: 10px 12px !important; background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%) !important; border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important; display: flex !important; align-items: center !important; gap: 8px !important; }
-    .logo { width: 18px !important; height: 18px !important; background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%) !important; border-radius: 4px !important; display: flex !important; align-items: center !important; justify-content: center !important; font-weight: 700 !important; font-size: 11px !important; color: #fff !important; }
-    .header-title { font-size: 11px !important; font-weight: 600 !important; color: #94a3b8 !important; text-transform: uppercase !important; letter-spacing: 0.05em !important; flex: 1 !important; }
-    .badge { font-size: 9px !important; background: rgba(99, 102, 241, 0.2) !important; color: #818cf8 !important; padding: 1px 5px !important; border-radius: 10px !important; font-weight: 500 !important; }
-    .suggestions-list, .all-fields-content { max-height: 180px !important; overflow-y: auto !important; padding: 6px !important; display: flex !important; flex-direction: column !important; gap: 4px !important; }
-    ::-webkit-scrollbar { width: 4px !important; }
-    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1) !important; border-radius: 2px !important; }
-    .suggestion-item { padding: 6px 10px !important; border-radius: 6px !important; cursor: pointer !important; display: flex !important; flex-direction: column !important; gap: 2px !important; transition: all 0.1s ease !important; border: 1px solid transparent !important; }
-    .suggestion-item:hover, .suggestion-item.selected { background: rgba(99, 102, 241, 0.15) !important; border-color: rgba(99, 102, 241, 0.3) !important; box-shadow: 0 0 8px rgba(99, 102, 241, 0.2) !important; }
-    .field-label { font-size: 9px !important; color: #818cf8 !important; font-weight: 600 !important; text-transform: uppercase !important; }
-    .field-value { font-size: 12px !important; color: #e2e8f0 !important; font-weight: 500 !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
-    .all-fields-trigger { padding: 8px 12px !important; font-size: 11px !important; color: #94a3b8 !important; cursor: pointer !important; display: flex !important; justify-content: space-between !important; background: rgba(255,255,255,0.02) !important; border-top: 1px solid rgba(255,255,255,0.05) !important; }
-    .all-fields-trigger:hover { background: rgba(255,255,255,0.05) !important; color: #f8fafc !important; }
-    .all-fields-content { display: none !important; background: rgba(0,0,0,0.2) !important; border-top: 1px solid rgba(255,255,255,0.05) !important; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    .autofill-container { background: rgba(248,252,255,0.96) !important; backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important; border: 1.5px solid rgba(191,219,254,0.9) !important; border-radius: 14px !important; box-shadow: 0 8px 32px rgba(37,99,235,0.16), 0 2px 8px rgba(15,23,42,0.08) !important; width: 288px !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; animation: popIn 0.18s cubic-bezier(0.34,1.56,0.64,1) !important; color: #0f172a !important; font-family: 'Inter', system-ui, sans-serif !important; text-align: left !important; }
+    @keyframes popIn { from { opacity: 0; transform: scale(0.94) translateY(-6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .dropdown-header { padding: 10px 12px !important; background: linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(124,58,237,0.06) 100%) !important; border-bottom: 1px solid rgba(191,219,254,0.7) !important; display: flex !important; align-items: center !important; gap: 8px !important; }
+    .logo { width: 20px !important; height: 20px !important; background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%) !important; border-radius: 6px !important; display: flex !important; align-items: center !important; justify-content: center !important; font-weight: 800 !important; font-size: 11px !important; color: #fff !important; box-shadow: 0 2px 8px rgba(37,99,235,0.35) !important; flex-shrink: 0 !important; }
+    .header-title { font-size: 10px !important; font-weight: 700 !important; color: #475569 !important; text-transform: uppercase !important; letter-spacing: 0.07em !important; flex: 1 !important; }
+    .badge { font-size: 9px !important; background: rgba(37,99,235,0.1) !important; color: #2563eb !important; padding: 2px 7px !important; border-radius: 99px !important; font-weight: 600 !important; border: 1px solid rgba(37,99,235,0.15) !important; }
+    .suggestions-list, .all-fields-content { max-height: 180px !important; overflow-y: auto !important; padding: 6px !important; display: flex !important; flex-direction: column !important; gap: 3px !important; }
+    ::-webkit-scrollbar { width: 3px !important; }
+    ::-webkit-scrollbar-thumb { background: #bfdbfe !important; border-radius: 99px !important; }
+    ::-webkit-scrollbar-thumb:hover { background: #60a5fa !important; }
+    .suggestion-item { padding: 7px 10px !important; border-radius: 8px !important; cursor: pointer !important; display: flex !important; flex-direction: column !important; gap: 2px !important; transition: all 0.15s ease !important; border: 1px solid transparent !important; }
+    .suggestion-item:hover, .suggestion-item.selected { background: rgba(37,99,235,0.07) !important; border-color: rgba(37,99,235,0.2) !important; box-shadow: 0 2px 8px rgba(37,99,235,0.1) !important; }
+    .field-label { font-size: 9px !important; color: #2563eb !important; font-weight: 700 !important; text-transform: uppercase !important; letter-spacing: 0.06em !important; }
+    .field-value { font-size: 12px !important; color: #0f172a !important; font-weight: 500 !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+    .all-fields-trigger { padding: 8px 12px !important; font-size: 11px !important; color: #475569 !important; cursor: pointer !important; display: flex !important; justify-content: space-between !important; align-items: center !important; background: rgba(37,99,235,0.03) !important; border-top: 1px solid rgba(191,219,254,0.6) !important; font-weight: 500 !important; transition: background 0.15s !important; }
+    .all-fields-trigger:hover { background: rgba(37,99,235,0.07) !important; color: #2563eb !important; }
+    .all-fields-content { display: none !important; background: rgba(37,99,235,0.02) !important; border-top: 1px solid rgba(191,219,254,0.5) !important; }
     .all-fields-content.show { display: flex !important; }
-    .dropdown-footer { padding: 6px 12px !important; background: rgba(0,0,0,0.3) !important; border-top: 1px solid rgba(255,255,255,0.05) !important; font-size: 9px !important; color: #64748b !important; display: flex !important; justify-content: space-between !important; }
+    .dropdown-footer { padding: 7px 12px !important; background: rgba(37,99,235,0.03) !important; border-top: 1px solid rgba(191,219,254,0.6) !important; font-size: 9px !important; color: #94a3b8 !important; display: flex !important; justify-content: space-between !important; align-items: center !important; gap: 6px !important; }
+    .btn-close { background: rgba(15,23,42,0.04) !important; border: 1px solid rgba(15,23,42,0.08) !important; color: #94a3b8 !important; cursor: pointer !important; font-size: 12px !important; line-height: 1 !important; padding: 0 !important; margin-left: auto !important; transition: all 0.15s !important; width: 20px !important; height: 20px !important; border-radius: 6px !important; display: flex !important; align-items: center !important; justify-content: center !important; flex-shrink: 0 !important; }
+    .btn-close:hover { background: rgba(15,23,42,0.1) !important; color: #0f172a !important; }
+    .btn-disable-site { background: rgba(239,68,68,0.07) !important; border: 1px solid rgba(239,68,68,0.2) !important; color: #ef4444 !important; cursor: pointer !important; font-size: 9px !important; font-family: 'Inter', system-ui, sans-serif !important; padding: 3px 8px !important; border-radius: 99px !important; white-space: nowrap !important; transition: all 0.15s !important; font-weight: 600 !important; }
+    .btn-disable-site:hover { background: rgba(239,68,68,0.15) !important; box-shadow: 0 2px 6px rgba(239,68,68,0.2) !important; }
+  `;
+
+  const DOCK_STYLE = `
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    .dock-wrapper { border-radius: 16px; overflow: hidden; box-shadow: 0 16px 56px rgba(37,99,235,0.22), 0 4px 16px rgba(15,23,42,0.12); border: 1.5px solid rgba(191,219,254,0.9); display: flex; flex-direction: column; position: relative; }
+    .dock-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: linear-gradient(135deg, rgba(37,99,235,0.1) 0%, rgba(124,58,237,0.07) 100%); background-color: rgba(248,252,255,0.98); border-bottom: 1px solid rgba(191,219,254,0.7); cursor: grab; user-select: none; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+    .dock-bar:active { cursor: grabbing; }
+    .dock-dots { color: #bfdbfe; font-size: 14px; flex-shrink: 0; letter-spacing: 1px; line-height: 1; }
+    .dock-logo { width: 18px; height: 18px; background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 10px; color: #fff; box-shadow: 0 2px 6px rgba(37,99,235,0.38); flex-shrink: 0; }
+    .dock-title { font-size: 11px; font-weight: 700; background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; flex: 1; font-family: 'Inter', system-ui, sans-serif; white-space: nowrap; overflow: hidden; }
+    .dock-close { background: rgba(15,23,42,0.05); border: 1px solid rgba(15,23,42,0.08); color: #94a3b8; cursor: pointer; font-size: 11px; width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; line-height: 1; flex-shrink: 0; font-family: inherit; }
+    .dock-close:hover { background: #ef4444; color: #fff; border-color: #ef4444; box-shadow: 0 2px 8px rgba(239,68,68,0.3); }
+    .dock-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 10; display: none; }
+    .dock-iframe { display: block; width: 450px; height: 580px; border: none; background: transparent; }
   `;
 
   document.addEventListener('focusin', (e) => {
@@ -129,8 +166,10 @@
 
   function handleInputFocus(input) {
     activeInput = input;
-    chrome.storage.sync.get(['job_profile', 'extensionEnabled'], (result) => {
+    chrome.storage.sync.get(['job_profile', 'extensionEnabled', 'disabledSites'], (result) => {
       if (result.extensionEnabled === false || !result.job_profile) return;
+      const disabledSites = result.disabledSites || [];
+      if (disabledSites.includes(window.location.hostname)) return;
       const suggestions = getMatchingSuggestions(input, result.job_profile);
       showDropdown(input, suggestions, result.job_profile);
     });
@@ -336,6 +375,9 @@
       if (exp.endDate) {
         addSugg(`End Date${prefix}`, exp.endDate, scoreHeuristics('endDate', h));
       }
+      if (exp.description) {
+        addSugg(`Job Description${prefix}`, exp.description, scoreHeuristics('expDescription', h));
+      }
     });
 
     // EDUCATION
@@ -426,6 +468,7 @@
         if (exp.location) flat[`location${prefix}`] = exp.location;
         if (exp.startDate) flat[`startDate${prefix}`] = exp.startDate;
         if (exp.endDate) flat[`endDate${prefix}`] = exp.endDate;
+        if (exp.description) flat[`expDescription${prefix}`] = exp.description;
       });
     }
 
@@ -491,7 +534,12 @@
     <div class="logo">J</div>
     <div class="header-title">Suggestions</div>
     <div class="badge">${suggestions.length ? 'Smart' : 'All'}</div>
+    <button class="btn-close" title="Close">✕</button>
   `;
+    header.querySelector('.btn-close').addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      removeDropdown();
+    });
     container.appendChild(header);
 
     // Suggestions List (Smart Matches)
@@ -521,65 +569,7 @@
     const allFieldsContent = document.createElement('div');
     allFieldsContent.className = 'all-fields-content';
 
-    const allFields = [];
-
-    // Add all simple string fields
-    Object.keys(p).forEach(k => {
-      if (typeof p[k] === 'string' && p[k]) {
-        allFields.push({ label: k, value: p[k] });
-      }
-    });
-
-    // Add WEBSITES
-    (p.websites || []).forEach((w, i) => {
-      if (w.url) {
-        allFields.push({ label: `Website ${i + 1}`, value: w.url });
-      }
-    });
-
-    // Add EXPERIENCE fields
-    (p.experience || []).forEach((exp, i) => {
-      const n = i + 1;
-      if (exp.title) allFields.push({ label: `Experience ${n} - Title`, value: exp.title });
-      if (exp.company) allFields.push({ label: `Experience ${n} - Company`, value: exp.company });
-      if (exp.location) allFields.push({ label: `Experience ${n} - Location`, value: exp.location });
-      if (exp.startDate) allFields.push({ label: `Experience ${n} - Start`, value: exp.startDate });
-      if (exp.endDate) allFields.push({ label: `Experience ${n} - End`, value: exp.endDate });
-    });
-
-    // Add EDUCATION fields
-    (p.education || []).forEach((edu, i) => {
-      const n = i + 1;
-      if (edu.school) allFields.push({ label: `Education ${n} - School`, value: edu.school });
-      if (edu.degree) allFields.push({ label: `Education ${n} - Degree`, value: edu.degree });
-      if (edu.gradYear) allFields.push({ label: `Education ${n} - Grad Year`, value: edu.gradYear });
-    });
-
-    // Add CERTIFICATIONS fields
-    (p.certifications || []).forEach((cert, i) => {
-      const n = i + 1;
-      if (cert.name) allFields.push({ label: `Cert ${n} - Name`, value: cert.name });
-      if (cert.issueDate) allFields.push({ label: `Cert ${n} - Issued`, value: cert.issueDate });
-      if (cert.expDate) allFields.push({ label: `Cert ${n} - Expires`, value: cert.expDate });
-    });
-
-    // Add LANGUAGES fields
-    (p.languages || []).forEach((lang, i) => {
-      const n = i + 1;
-      if (lang.language) allFields.push({ label: `Language ${n}`, value: lang.language });
-      if (lang.verbal) allFields.push({ label: `Language ${n} - Verbal`, value: lang.verbal });
-      if (lang.writing) allFields.push({ label: `Language ${n} - Writing`, value: lang.writing });
-    });
-
-    // Add CUSTOM FIELDS
-    (p.customFields || []).forEach(cf => {
-      if (cf.label && cf.value) {
-        allFields.push({ label: `Custom: ${cf.label}`, value: cf.value });
-      }
-    });
-
-    // Create items for all fields
-    allFields.forEach(f => {
+    buildAllFieldsList(p).forEach(f => {
       const item = createItem(f.label, f.value, input);
       allFieldsContent.appendChild(item);
       suggestionItems.push(item);
@@ -599,7 +589,17 @@
     // Footer
     const footer = document.createElement('div');
     footer.className = 'dropdown-footer';
-    footer.innerHTML = `<span>↑↓ Navigate</span><span>Enter to fill</span>`;
+    footer.innerHTML = `<span>↑↓ Navigate</span><span>Enter to fill</span><button class="btn-disable-site" title="Stop showing suggestions on this site">Disable for site</button>`;
+    footer.querySelector('.btn-disable-site').addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const hostname = window.location.hostname;
+      chrome.storage.sync.get(['disabledSites'], (result) => {
+        const sites = result.disabledSites || [];
+        if (!sites.includes(hostname)) sites.push(hostname);
+        chrome.storage.sync.set({ disabledSites: sites });
+      });
+      removeDropdown();
+    });
     container.appendChild(footer);
 
     shadow.appendChild(container);
@@ -689,4 +689,159 @@
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
   }
+
+  // ── Shared helper used by dropdown + dock ──────────────────
+  function buildAllFieldsList(p) {
+    const fields = [];
+    Object.keys(p).forEach(k => {
+      if (typeof p[k] === 'string' && p[k]) fields.push({ label: k, value: p[k] });
+    });
+    (p.websites || []).forEach((w, i) => {
+      if (w.url) fields.push({ label: `Website ${i + 1}`, value: w.url });
+    });
+    (p.experience || []).forEach((exp, i) => {
+      const n = i + 1;
+      if (exp.title)       fields.push({ label: `Experience ${n} - Title`, value: exp.title });
+      if (exp.company)     fields.push({ label: `Experience ${n} - Company`, value: exp.company });
+      if (exp.location)    fields.push({ label: `Experience ${n} - Location`, value: exp.location });
+      if (exp.startDate)   fields.push({ label: `Experience ${n} - Start`, value: exp.startDate });
+      if (exp.endDate)     fields.push({ label: `Experience ${n} - End`, value: exp.endDate });
+      if (exp.description) fields.push({ label: `Experience ${n} - Description`, value: exp.description });
+    });
+    (p.education || []).forEach((edu, i) => {
+      const n = i + 1;
+      if (edu.school)   fields.push({ label: `Education ${n} - School`, value: edu.school });
+      if (edu.degree)   fields.push({ label: `Education ${n} - Degree`, value: edu.degree });
+      if (edu.gradYear) fields.push({ label: `Education ${n} - Grad Year`, value: edu.gradYear });
+    });
+    (p.certifications || []).forEach((cert, i) => {
+      const n = i + 1;
+      if (cert.name)      fields.push({ label: `Cert ${n} - Name`, value: cert.name });
+      if (cert.issueDate) fields.push({ label: `Cert ${n} - Issued`, value: cert.issueDate });
+      if (cert.expDate)   fields.push({ label: `Cert ${n} - Expires`, value: cert.expDate });
+    });
+    (p.languages || []).forEach((lang, i) => {
+      const n = i + 1;
+      if (lang.language) fields.push({ label: `Language ${n}`, value: lang.language });
+      if (lang.verbal)   fields.push({ label: `Language ${n} - Verbal`, value: lang.verbal });
+      if (lang.writing)  fields.push({ label: `Language ${n} - Writing`, value: lang.writing });
+    });
+    (p.customFields || []).forEach(cf => {
+      if (cf.label && cf.value) fields.push({ label: `Custom: ${cf.label}`, value: cf.value });
+    });
+    return fields;
+  }
+
+  // ── Dock panel ─────────────────────────────────────────────
+  function showDockPanel(initTop, initRight) {
+    if (dockPanel) { dockPanel.remove(); dockPanel = null; }
+    isDocked = true;
+
+    const host = document.createElement('div');
+    host.id = 'job-dock-host';
+    Object.assign(host.style, {
+      position: 'fixed',
+      top: `${initTop}px`,
+      right: `${initRight}px`,
+      left: 'auto',
+      zIndex: '2147483646',
+    });
+
+    const shadow = host.attachShadow({ mode: 'open' });
+    const styleEl = document.createElement('style');
+    styleEl.textContent = DOCK_STYLE;
+    shadow.appendChild(styleEl);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'dock-wrapper';
+
+    // Drag titlebar
+    const bar = document.createElement('div');
+    bar.className = 'dock-bar';
+    bar.innerHTML = `
+      <span class="dock-dots">⠿⠿</span>
+      <div class="dock-logo">J</div>
+      <div class="dock-title">Job Autocomplete Pro</div>
+      <button class="dock-close" title="Close">✕</button>
+    `;
+
+    // Transparent overlay — blocks iframe mouse capture while dragging
+    const overlay = document.createElement('div');
+    overlay.className = 'dock-overlay';
+
+    // Full popup as iframe
+    const iframe = document.createElement('iframe');
+    iframe.className = 'dock-iframe';
+    iframe.src = chrome.runtime.getURL('popup/popup.html');
+
+    wrapper.appendChild(bar);
+    wrapper.appendChild(overlay);
+    wrapper.appendChild(iframe);
+    shadow.appendChild(wrapper);
+    document.body.appendChild(host);
+    dockPanel = host;
+
+    bar.querySelector('.dock-close').addEventListener('click', closeDock);
+
+    // Drag logic
+    let dragging = false, ox = 0, oy = 0;
+
+    const onMove = (e) => {
+      if (!dragging) return;
+      const newTop   = Math.max(0, Math.min(window.innerHeight - 60, e.clientY - oy));
+      const newRight = Math.max(0, window.innerWidth - (e.clientX - ox) - host.offsetWidth);
+      host.style.top   = `${newTop}px`;
+      host.style.right = `${newRight}px`;
+    };
+
+    const onUp = () => {
+      if (!dragging) return;
+      dragging = false;
+      overlay.style.display = 'none';
+      bar.style.cursor = 'grab';
+      chrome.storage.local.set({
+        dockTop:   parseInt(host.style.top)   || 70,
+        dockRight: parseInt(host.style.right) || 20,
+      });
+    };
+
+    bar.addEventListener('mousedown', (e) => {
+      if (e.target.classList.contains('dock-close')) return;
+      dragging = true;
+      overlay.style.display = 'block';
+      const rect = host.getBoundingClientRect();
+      ox = e.clientX - rect.left;
+      oy = e.clientY - rect.top;
+      bar.style.cursor = 'grabbing';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
+  function closeDock() {
+    isDocked = false;
+    chrome.storage.local.set({ isDocked: false });
+    if (dockPanel) { dockPanel.remove(); dockPanel = null; }
+  }
+
+  // ── Init: restore dock if it was open ──────────────────────
+  chrome.storage.local.get(['isDocked', 'dockTop', 'dockRight'], (r) => {
+    if (!r.isDocked) return;
+    showDockPanel(r.dockTop || 70, r.dockRight || 20);
+  });
+
+  // ── Storage change listener (dock toggle from popup) ──────
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local' || !('isDocked' in changes)) return;
+    if (changes.isDocked.newValue === true) {
+      if (isDocked && dockPanel) return;
+      chrome.storage.local.get(['dockTop', 'dockRight'], (pos) => {
+        showDockPanel(pos.dockTop || 70, pos.dockRight || 20);
+      });
+    } else {
+      closeDock();
+    }
+  });
 })();

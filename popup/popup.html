@@ -21,12 +21,25 @@
         </div>
       </div>
       <div class="header-actions">
+        <button type="button" id="btn-dock" class="btn-dock-icon" title="Dock to page">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="17" x2="12" y2="22"></line>
+            <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path>
+          </svg>
+        </button>
         <label class="switch">
           <input type="checkbox" id="extension-toggle" checked>
           <span class="slider round"></span>
         </label>
       </div>
     </header>
+
+    <!-- Site Status Bar -->
+    <div class="site-bar" id="site-bar" style="display:none">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="site-bar-icon"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <span class="site-bar-host" id="site-bar-host"></span>
+      <button type="button" class="site-bar-btn" id="btn-site-toggle"></button>
+    </div>
 
     <!-- Tabs Navigation -->
     <nav class="tabs-nav">

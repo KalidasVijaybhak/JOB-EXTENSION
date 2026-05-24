@@ -48,11 +48,24 @@ document.addEventListener('DOMContentLoaded', () => {
     return (str || '').toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  const WEBSITE_DEFAULTS = [
+    { type: 'linkedin',  label: 'LinkedIn',   placeholder: 'https://linkedin.com/in/yourprofile' },
+    { type: 'portfolio', label: 'Portfolio',  placeholder: 'https://yourportfolio.com' },
+    { type: 'x',         label: 'X / Twitter', placeholder: 'https://x.com/yourhandle' },
+    { type: 'medium',    label: 'Medium',     placeholder: 'https://medium.com/@yourhandle' },
+  ];
+
   // Add Row Functions
   document.getElementById('btn-add-website').addEventListener('click', () => addWebsite());
-  function addWebsite(url = '') {
+  function addWebsite(url = '', type = '') {
+    const meta = WEBSITE_DEFAULTS.find(d => d.type === type);
+    const label = meta ? meta.label : 'Website';
+    const placeholder = meta ? meta.placeholder : 'https://...';
     createCard('websites-container', `
-      <div class="form-group" style="margin:0"><input type="url" class="site-url" placeholder="https://..." value="${escapeHtml(url)}"></div>
+      <div class="form-group" style="margin:0">
+        <label>${escapeHtml(label)}</label>
+        <input type="url" class="site-url" data-type="${escapeHtml(type)}" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(url)}">
+      </div>
     `);
   }
 
@@ -68,6 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="form-group"><label>Start Date (MM/YYYY)</label><input type="text" class="exp-start" value="${escapeHtml(data.startDate || '')}"></div>
         <div class="form-group"><label>End Date (MM/YYYY)</label><input type="text" class="exp-end" value="${escapeHtml(data.endDate || '')}"></div>
       </div>
+      <div class="form-group" style="margin-bottom:0"><label>Description / Responsibilities</label><textarea class="exp-desc" rows="3" placeholder="Describe your role, key responsibilities, achievements...">${escapeHtml(data.description || '')}</textarea></div>
     `);
   }
 
@@ -114,6 +128,76 @@ document.addEventListener('DOMContentLoaded', () => {
     `);
   }
 
+  // Site status bar
+  const siteBar    = document.getElementById('site-bar');
+  const siteHost   = document.getElementById('site-bar-host');
+  const sitToggle  = document.getElementById('btn-site-toggle');
+  let currentHostname = '';
+
+  function renderSiteBtn(isDisabled) {
+    if (isDisabled) {
+      sitToggle.textContent = 'Disabled for site';
+      sitToggle.className = 'site-bar-btn is-disabled';
+    } else {
+      sitToggle.textContent = 'Active on site';
+      sitToggle.className = 'site-bar-btn is-active';
+    }
+  }
+
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (!tabs[0] || !tabs[0].url) return;
+    let hostname;
+    try { hostname = new URL(tabs[0].url).hostname; } catch (e) { return; }
+    if (!hostname || hostname.startsWith('chrome')) return;
+
+    currentHostname = hostname;
+    siteHost.textContent = hostname;
+    siteBar.style.display = 'flex';
+
+    chrome.storage.sync.get(['disabledSites'], (r) => {
+      renderSiteBtn((r.disabledSites || []).includes(hostname));
+    });
+  });
+
+  sitToggle.addEventListener('click', () => {
+    if (!currentHostname) return;
+    chrome.storage.sync.get(['disabledSites'], (r) => {
+      const sites = r.disabledSites || [];
+      const idx = sites.indexOf(currentHostname);
+      if (idx >= 0) {
+        sites.splice(idx, 1);
+        renderSiteBtn(false);
+      } else {
+        sites.push(currentHostname);
+        renderSiteBtn(true);
+      }
+      chrome.storage.sync.set({ disabledSites: sites });
+    });
+  });
+
+  // Dock button
+  const btnDock = document.getElementById('btn-dock');
+
+  function setDockState(docked) {
+    if (docked) {
+      btnDock.classList.add('active');
+      btnDock.title = 'Undock from page';
+    } else {
+      btnDock.classList.remove('active');
+      btnDock.title = 'Dock to page';
+    }
+  }
+
+  chrome.storage.local.get(['isDocked'], (r) => setDockState(!!r.isDocked));
+
+  btnDock.addEventListener('click', () => {
+    chrome.storage.local.get(['isDocked'], (r) => {
+      const next = !r.isDocked;
+      chrome.storage.local.set({ isDocked: next });
+      setDockState(next);
+    });
+  });
+
   // Load and Populate
   function loadProfile() {
     chrome.storage.sync.get(['job_profile', 'extensionEnabled'], (result) => {
@@ -130,7 +214,11 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       // Array Fields
-      (p.websites || []).forEach(w => addWebsite(w.url));
+      if (p.websites && p.websites.length > 0) {
+        p.websites.forEach(w => addWebsite(w.url, w.type || ''));
+      } else {
+        WEBSITE_DEFAULTS.forEach(d => addWebsite('', d.type));
+      }
       (p.experience || []).forEach(e => addExperience(e));
       (p.education || []).forEach(e => addEducation(e));
       (p.certifications || []).forEach(c => addCert(c));
@@ -149,13 +237,17 @@ document.addEventListener('DOMContentLoaded', () => {
       if (el) data[id] = el.value.trim();
     });
 
-    data.websites = Array.from(document.querySelectorAll('#websites-container .dynamic-card')).map(c => ({ url: c.querySelector('.site-url').value.trim() })).filter(w => w.url);
+    data.websites = Array.from(document.querySelectorAll('#websites-container .dynamic-card')).map(c => ({
+      url: c.querySelector('.site-url').value.trim(),
+      type: c.querySelector('.site-url').dataset.type || ''
+    })).filter(w => w.url);
     data.experience = Array.from(document.querySelectorAll('#experience-container .dynamic-card')).map(c => ({
       title: c.querySelector('.exp-title').value.trim(),
       company: c.querySelector('.exp-company').value.trim(),
       location: c.querySelector('.exp-location').value.trim(),
       startDate: c.querySelector('.exp-start').value.trim(),
-      endDate: c.querySelector('.exp-end').value.trim()
+      endDate: c.querySelector('.exp-end').value.trim(),
+      description: c.querySelector('.exp-desc').value.trim()
     })).filter(e => e.title || e.company);
 
     data.education = Array.from(document.querySelectorAll('#education-container .dynamic-card')).map(c => ({
