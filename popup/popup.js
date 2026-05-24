@@ -214,11 +214,12 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       // Array Fields
-      if (p.websites && p.websites.length > 0) {
-        p.websites.forEach(w => addWebsite(w.url, w.type || ''));
-      } else {
-        WEBSITE_DEFAULTS.forEach(d => addWebsite('', d.type));
-      }
+      const savedWebsites = p.websites || [];
+      const savedByType = {};
+      savedWebsites.forEach(w => { if (w.type) savedByType[w.type] = w.url; });
+      WEBSITE_DEFAULTS.forEach(d => addWebsite(savedByType[d.type] || '', d.type));
+      savedWebsites.filter(w => !w.type || !WEBSITE_DEFAULTS.find(d => d.type === w.type))
+                   .forEach(w => addWebsite(w.url, w.type || ''));
       (p.experience || []).forEach(e => addExperience(e));
       (p.education || []).forEach(e => addEducation(e));
       (p.certifications || []).forEach(c => addCert(c));
