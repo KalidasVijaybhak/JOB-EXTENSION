@@ -29,7 +29,7 @@
 
     // WEBSITE/SOCIAL - Enhanced
     website: ['website', 'portfolio', 'homepage', 'personal site', 'url', 'blog', 'link', 'web address', 'personal website', 'online portfolio'],
-    linkedin: ['linkedin', 'linked in', 'linkedin profile', 'linkedin url'],
+    linkedin: ['linkedin', 'linked in', 'linkedin profile', 'linkedin url', 'linkedin profile url', 'linkedinprofile'],
     github: ['github', 'git hub', 'github profile', 'github username'],
     twitter: ['twitter', 'x profile', 'twitter handle'],
 
@@ -140,7 +140,8 @@
   `;
 
   document.addEventListener('focusin', (e) => {
-    const target = e.target;
+    // composedPath pierces shadow DOM (needed for LinkedIn web components)
+    const target = (e.composedPath && e.composedPath()[0]) || e.target;
     if (isFillableInput(target)) handleInputFocus(target);
   });
 
@@ -506,15 +507,27 @@
     return flat;
   }
 
+  // Returns true if el is inside a position:fixed ancestor (e.g. LinkedIn's modal)
+  function isInFixedContainer(el) {
+    let node = el.parentElement;
+    while (node && node !== document.documentElement) {
+      if (window.getComputedStyle(node).position === 'fixed') return true;
+      node = node.parentElement;
+    }
+    return false;
+  }
+
   function showDropdown(input, suggestions, p) {
     removeDropdown();
 
     const host = document.createElement('div');
     host.id = 'job-autocomplete-shadow-host';
     const rect = input.getBoundingClientRect();
-    host.style.position = 'absolute';
-    host.style.left = `${rect.left + window.scrollX}px`;
-    host.style.top = `${rect.bottom + window.scrollY + 6}px`;
+    // Use fixed positioning when the input is inside a fixed container (LinkedIn modal, etc.)
+    const useFixed = isInFixedContainer(input);
+    host.style.position = useFixed ? 'fixed' : 'absolute';
+    host.style.left = `${rect.left + (useFixed ? 0 : window.scrollX)}px`;
+    host.style.top = `${rect.bottom + (useFixed ? 0 : window.scrollY) + 6}px`;
     host.style.width = `${Math.max(280, rect.width)}px`;
     host.style.zIndex = '2147483647';
 
@@ -643,13 +656,12 @@
     }
 
     // Trigger all possible events for framework detection
-    input.dispatchEvent(new Event('input', { bubbles: true }));
+    // InputEvent (not plain Event) is needed for LinkedIn/React 16+ synthetic event system
+    input.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'a' }));
+    input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'a' }));
     input.dispatchEvent(new Event('blur', { bubbles: true }));
-
-    // Workday-specific events
-    input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }));
-    input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
 
     setTimeout(() => {
       input.dispatchEvent(new Event('blur', { bubbles: true }));
@@ -659,15 +671,18 @@
   function adjustPosition(input, host) {
     const rect = input.getBoundingClientRect();
     const dropdownHeight = host.offsetHeight || 300;
-    let top = rect.bottom + window.scrollY + 6;
+    const useFixed = host.style.position === 'fixed';
+    const scrollY = useFixed ? 0 : window.scrollY;
+    const scrollX = useFixed ? 0 : window.scrollX;
+    let top = rect.bottom + scrollY + 6;
 
     // Flip dropdown above input if not enough space below
     if (rect.bottom + dropdownHeight > window.innerHeight && rect.top - dropdownHeight > 0) {
-      top = rect.top + window.scrollY - dropdownHeight - 6;
+      top = rect.top + scrollY - dropdownHeight - 6;
     }
 
     host.style.top = `${top}px`;
-    host.style.left = `${rect.left + window.scrollX}px`;
+    host.style.left = `${rect.left + scrollX}px`;
   }
 
   function removeDropdown() {
