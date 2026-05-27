@@ -35,7 +35,39 @@ document.addEventListener('DOMContentLoaded', () => {
       card.remove();
     });
     container.appendChild(card);
+    attachCopyButtons(card);
     return card;
+  }
+
+  const COPY_ICON = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+  const CHECK_ICON = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
+  function attachCopyButtons(container) {
+    const fields = container.querySelectorAll(
+      'input[type="text"], input[type="email"], input[type="tel"], input[type="url"], input[type="number"], textarea'
+    );
+    fields.forEach(field => {
+      if (field.parentElement.classList.contains('field-wrap')) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'field-wrap';
+      field.parentNode.insertBefore(wrap, field);
+      wrap.appendChild(field);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-copy';
+      btn.title = 'Copy';
+      btn.innerHTML = COPY_ICON;
+      btn.addEventListener('click', () => {
+        const val = field.value;
+        if (!val) return;
+        navigator.clipboard.writeText(val).then(() => {
+          btn.innerHTML = CHECK_ICON;
+          btn.classList.add('copied');
+          setTimeout(() => { btn.innerHTML = COPY_ICON; btn.classList.remove('copied'); }, 1500);
+        });
+      });
+      wrap.appendChild(btn);
+    });
   }
 
   function escapeHtml(str) {
@@ -233,6 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
       (p.certifications || []).forEach(c => addCert(c));
       (p.languages || []).forEach(l => addLanguage(l));
       (p.customFields || []).forEach(cf => addCustomField(cf.label, cf.value));
+      attachCopyButtons(profileForm);
     });
   }
   loadProfile();

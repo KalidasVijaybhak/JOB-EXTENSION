@@ -429,6 +429,43 @@ input:focus, textarea:focus {
 }
 .footer-left, .footer-right { display: flex; gap: 6px; align-items: center; }
 
+/* ── Copy Button ───────────────────────────────────────────── */
+.field-wrap { position: relative; }
+
+.btn-copy {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--blue-100);
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 5px;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s var(--ease);
+  opacity: 0;
+  z-index: 1;
+  flex-shrink: 0;
+}
+.field-wrap:hover .btn-copy,
+.field-wrap:focus-within .btn-copy { opacity: 1; }
+.btn-copy:hover {
+  color: var(--blue-600);
+  border-color: var(--blue-200);
+  background: var(--blue-50);
+}
+.btn-copy.copied {
+  color: var(--success);
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.08);
+  opacity: 1;
+}
+.field-wrap input,
+.field-wrap textarea { padding-right: 32px; }
+.field-wrap:has(textarea) .btn-copy { top: 8px; transform: none; }
+
 /* ── Toast ─────────────────────────────────────────────────── */
 .toast {
   position: absolute; bottom: 54px; left: 50%;
