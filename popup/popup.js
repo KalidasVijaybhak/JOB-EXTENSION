@@ -1,3 +1,6 @@
+// Hide popup's own header when running inside the dock iframe
+if (window !== window.top) document.documentElement.classList.add('in-iframe');
+
 document.addEventListener('DOMContentLoaded', () => {
   // Tabs
   const tabButtons = document.querySelectorAll('.tab-btn');
@@ -96,16 +99,22 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `);
     } else {
+      const PENCIL = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
       const card = createCard('websites-container', `
-        <div class="form-group custom-website-group" style="margin:0">
-          <div class="custom-website-label-row">
-            <span class="custom-site-badge">Custom</span>
-            <input type="text" class="site-label no-copy" placeholder="e.g. Dribbble, Blog, Portfolio…" value="${escapeHtml(customLabel)}">
+        <div class="form-group" style="margin:0">
+          <div class="custom-site-label-row">
+            <input type="text" class="site-label site-label-static no-copy" placeholder="Site name…" value="${escapeHtml(customLabel)}">
+            <button type="button" class="btn-edit-label" title="Rename">${PENCIL}</button>
           </div>
-          <input type="url" class="site-url" data-type="" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(url)}" style="margin-top:6px">
+          <input type="url" class="site-url" data-type="" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(url)}">
         </div>
       `);
       card.classList.add('custom-website-card');
+      card.querySelector('.btn-edit-label').addEventListener('click', () => {
+        const lbl = card.querySelector('.site-label');
+        lbl.focus();
+        lbl.select();
+      });
     }
   }
 
@@ -171,21 +180,12 @@ document.addEventListener('DOMContentLoaded', () => {
     ).join('');
 
     const card = createCard('custom-fields-container', `
-      <div class="custom-field-labels">
-        <div class="custom-field-labels-header">
-          <label style="margin:0">Match Labels</label>
-          <span class="label-hint">any alias below triggers this field</span>
+      <div class="form-group" style="margin:0">
+        <div class="custom-chips-row">
+          ${labelsHtml}
+          <button type="button" class="btn-chip-add" title="Add match label">+</button>
+          <input type="text" class="custom-label-input no-copy chip-input-inline" placeholder="Alias…">
         </div>
-        <div class="custom-labels-wrap">
-          <div class="custom-labels-tags">${labelsHtml}</div>
-          <div class="custom-label-add-row">
-            <input type="text" class="custom-label-input no-copy" placeholder="Type alias and press Enter or +">
-            <button type="button" class="btn-add-label" title="Add label">+</button>
-          </div>
-        </div>
-      </div>
-      <div class="form-group" style="margin-top:8px;margin-bottom:0">
-        <label>Value</label>
         <input type="text" class="custom-value" placeholder="Value (e.g. 30 days)" value="${escapeHtml(value)}">
       </div>
     `);
@@ -194,25 +194,31 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', () => btn.closest('.custom-label-tag').remove());
     });
 
-    const labelInput = card.querySelector('.custom-label-input');
-    const addBtn = card.querySelector('.btn-add-label');
+    const chipInput = card.querySelector('.custom-label-input');
+    const addBtn   = card.querySelector('.btn-chip-add');
+    const chipsRow = card.querySelector('.custom-chips-row');
 
-    function addLabelTag() {
-      const val = labelInput.value.trim();
+    function commitTag() {
+      const val = chipInput.value.trim();
+      chipInput.value = '';
+      chipInput.classList.remove('visible');
       if (!val) return;
-      const tagsArea = card.querySelector('.custom-labels-tags');
       const tag = document.createElement('span');
       tag.className = 'custom-label-tag';
       tag.dataset.label = val;
       tag.innerHTML = `${escapeHtml(val)}<button type="button" class="tag-remove" tabindex="-1">&times;</button>`;
       tag.querySelector('.tag-remove').addEventListener('click', () => tag.remove());
-      tagsArea.appendChild(tag);
-      labelInput.value = '';
-      labelInput.focus();
+      chipsRow.insertBefore(tag, addBtn);
     }
 
-    addBtn.addEventListener('click', addLabelTag);
-    labelInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addLabelTag(); } });
+    addBtn.addEventListener('click', () => { chipInput.classList.add('visible'); chipInput.focus(); });
+    chipInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); commitTag(); }
+      if (e.key === 'Escape') { chipInput.value = ''; chipInput.classList.remove('visible'); }
+    });
+    chipInput.addEventListener('blur', () => {
+      if (!chipInput.value.trim()) chipInput.classList.remove('visible');
+    });
   }
 
   // Toggle: per-site when on a real page, global otherwise
@@ -267,26 +273,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Dock button
+  // Dock button (tab-scoped)
   const btnDock = document.getElementById('btn-dock');
 
   function setDockState(docked) {
-    if (docked) {
-      btnDock.classList.add('active');
-      btnDock.title = 'Undock from page';
-    } else {
-      btnDock.classList.remove('active');
-      btnDock.title = 'Dock to page';
-    }
+    btnDock.classList.toggle('active', !!docked);
+    btnDock.title = docked ? 'Unpin from this tab' : 'Pin to this tab';
   }
 
-  chrome.storage.local.get(['isDocked'], (r) => setDockState(!!r.isDocked));
+  function queryCurrentTab(cb) {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]) cb(tabs[0].id);
+    });
+  }
+
+  // Init: read dock state from the active tab's main frame
+  queryCurrentTab((tabId) => {
+    chrome.tabs.sendMessage(tabId, { action: 'getDockState' }, { frameId: 0 }, (response) => {
+      if (chrome.runtime.lastError) return;
+      setDockState(response && response.isDocked);
+    });
+  });
 
   btnDock.addEventListener('click', () => {
-    chrome.storage.local.get(['isDocked'], (r) => {
-      const next = !r.isDocked;
-      chrome.storage.local.set({ isDocked: next });
-      setDockState(next);
+    queryCurrentTab((tabId) => {
+      chrome.tabs.sendMessage(tabId, { action: 'toggleDock' }, { frameId: 0 }, (response) => {
+        if (chrome.runtime.lastError) return;
+        if (response) {
+          setDockState(response.isDocked);
+          if (response.isDocked) window.close(); // close popup once pinned
+        }
+      });
     });
   });
 

@@ -135,6 +135,12 @@
     .dock-title { font-size: 11px; font-weight: 700; background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; flex: 1; font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; white-space: nowrap; overflow: hidden; }
     .dock-close { background: rgba(15,23,42,0.05); border: 1px solid rgba(15,23,42,0.08); color: #94a3b8; cursor: pointer; font-size: 11px; width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; line-height: 1; flex-shrink: 0; font-family: inherit; }
     .dock-close:hover { background: #ef4444; color: #fff; border-color: #ef4444; box-shadow: 0 2px 8px rgba(239,68,68,0.3); }
+    .dock-toggle { position: relative; display: inline-block; width: 34px; height: 18px; flex-shrink: 0; cursor: pointer; }
+    .dock-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .dock-slider { position: absolute; inset: 0; background: rgba(15,23,42,0.12); border-radius: 99px; transition: 0.22s; }
+    .dock-slider::before { position: absolute; content: ''; width: 12px; height: 12px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: 0.22s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    .dock-toggle input:checked + .dock-slider { background: linear-gradient(135deg, #2563eb, #7c3aed); }
+    .dock-toggle input:checked + .dock-slider::before { transform: translateX(16px); }
     .dock-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 10; display: none; }
     .dock-iframe { display: block; width: 450px; height: 580px; border: none; background: transparent; }
   `;
@@ -793,8 +799,41 @@
       <span class="dock-dots">⠿⠿</span>
       <div class="dock-logo">J</div>
       <div class="dock-title">Job Autocomplete Pro</div>
+      <label class="dock-toggle" title="Enable / disable on this site">
+        <input type="checkbox" class="dock-toggle-input">
+        <span class="dock-slider"></span>
+      </label>
       <button class="dock-close" title="Close">✕</button>
     `;
+
+    // Wire up the enable/disable toggle in the dock bar
+    const dockToggleInput = bar.querySelector('.dock-toggle-input');
+    const hostname = window.location.hostname && !window.location.hostname.startsWith('chrome')
+      ? window.location.hostname : '';
+
+    chrome.storage.sync.get(['extensionEnabled', 'disabledSites'], (r) => {
+      if (hostname) {
+        dockToggleInput.checked = !(r.disabledSites || []).includes(hostname);
+      } else {
+        dockToggleInput.checked = r.extensionEnabled !== false;
+      }
+    });
+
+    dockToggleInput.addEventListener('change', (e) => {
+      e.stopPropagation();
+      const on = e.target.checked;
+      if (hostname) {
+        chrome.storage.sync.get(['disabledSites'], (r) => {
+          const sites = r.disabledSites || [];
+          const idx = sites.indexOf(hostname);
+          if (on && idx >= 0) sites.splice(idx, 1);
+          else if (!on && idx < 0) sites.push(hostname);
+          chrome.storage.sync.set({ disabledSites: sites });
+        });
+      } else {
+        chrome.storage.sync.set({ extensionEnabled: on });
+      }
+    });
 
     // Transparent overlay — blocks iframe mouse capture while dragging
     const overlay = document.createElement('div');
@@ -830,14 +869,14 @@
       dragging = false;
       overlay.style.display = 'none';
       bar.style.cursor = 'grab';
-      chrome.storage.local.set({
-        dockTop: parseInt(host.style.top) || 70,
-        dockRight: parseInt(host.style.right) || 20,
-      });
+      const top   = parseInt(host.style.top)   || 20;
+      const right = parseInt(host.style.right) || 20;
+      setDockStorage({ isDocked: true, top, right });
     };
 
     bar.addEventListener('mousedown', (e) => {
       if (e.target.classList.contains('dock-close')) return;
+      if (e.target.closest('.dock-toggle')) return;
       dragging = true;
       overlay.style.display = 'block';
       const rect = host.getBoundingClientRect();
@@ -853,26 +892,57 @@
 
   function closeDock() {
     isDocked = false;
-    chrome.storage.local.set({ isDocked: false });
+    setDockStorage(null);
     if (dockPanel) { dockPanel.remove(); dockPanel = null; }
   }
 
-  // ── Init: restore dock if it was open ──────────────────────
-  chrome.storage.local.get(['isDocked', 'dockTop', 'dockRight'], (r) => {
-    if (!r.isDocked) return;
-    showDockPanel(r.dockTop || 70, r.dockRight || 20);
-  });
+  // ── Per-tab dock state via sessionStorage ──────────────────
+  function getDockStorage() {
+    try { return JSON.parse(sessionStorage.getItem('__job_dock__') || 'null'); } catch (e) { return null; }
+  }
+  function setDockStorage(state) {
+    try {
+      if (state) sessionStorage.setItem('__job_dock__', JSON.stringify(state));
+      else sessionStorage.removeItem('__job_dock__');
+    } catch (e) {}
+  }
 
-  // ── Storage change listener (dock toggle from popup) ──────
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== 'local' || !('isDocked' in changes)) return;
-    if (changes.isDocked.newValue === true) {
-      if (isDocked && dockPanel) return;
-      chrome.storage.local.get(['dockTop', 'dockRight'], (pos) => {
-        showDockPanel(pos.dockTop || 70, pos.dockRight || 20);
-      });
-    } else {
-      closeDock();
+  // ── Init: restore dock for this tab ───────────────────────
+  const savedDock = getDockStorage();
+  if (savedDock && savedDock.isDocked) {
+    showDockPanel(savedDock.top || 20, savedDock.right || 20);
+  }
+
+  // ── Message listener (popup → content script, main frame only) ──
+  chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+    if (msg.action === 'getDockState') {
+      const top   = dockPanel ? (parseInt(dockPanel.style.top)   || 20) : (getDockStorage()?.top   || 20);
+      const right = dockPanel ? (parseInt(dockPanel.style.right) || 20) : (getDockStorage()?.right || 20);
+      sendResponse({ isDocked, top, right });
+      return false;
+    }
+    if (msg.action === 'toggleDock') {
+      if (isDocked) {
+        closeDock();
+        sendResponse({ isDocked: false });
+      } else {
+        const state = getDockStorage();
+        const top   = (state && state.top)   || 20;
+        const right = (state && state.right) || 20;
+        showDockPanel(top, right);
+        setDockStorage({ isDocked: true, top, right });
+        sendResponse({ isDocked: true });
+      }
+      return false;
+    }
+    if (msg.action === 'setDock') {
+      if (msg.isDocked) {
+        showDockPanel(msg.top || 20, msg.right || 20);
+        setDockStorage({ isDocked: true, top: msg.top || 20, right: msg.right || 20 });
+      } else {
+        closeDock();
+      }
+      return false;
     }
   });
 })();
