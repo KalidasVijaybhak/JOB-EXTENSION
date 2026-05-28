@@ -349,10 +349,23 @@
     });
 
     // WEBSITES
+    const WEBSITE_TYPE_KEYWORD = { linkedin: 'linkedin', github: 'github', x: 'twitter', portfolio: 'website', medium: 'website' };
+    const WEBSITE_TYPE_LABEL   = { linkedin: 'LinkedIn', github: 'GitHub', x: 'X / Twitter', portfolio: 'Portfolio', medium: 'Medium' };
     (p.websites || []).forEach((w, i) => {
-      if (w.url) {
-        const label = i === 0 ? 'Website' : `Website ${i + 1}`;
-        addSugg(label, w.url, scoreHeuristics('website', h));
+      if (!w.url) return;
+      if (w.type) {
+        const kwKey = WEBSITE_TYPE_KEYWORD[w.type] || 'website';
+        const lbl   = WEBSITE_TYPE_LABEL[w.type]   || 'Website';
+        addSugg(lbl, w.url, scoreHeuristics(kwKey, h));
+      } else if (w.label) {
+        const cleanedLbl = cleanText(w.label);
+        let score = scoreHeuristics('website', h);
+        if (h.labelText && h.labelText.includes(cleanedLbl)) score += 80;
+        if (h.placeholder && h.placeholder.includes(cleanedLbl)) score += 40;
+        if (h.name && h.name.includes(cleanedLbl)) score += 30;
+        addSugg(w.label, w.url, score);
+      } else {
+        addSugg(i === 0 ? 'Website' : `Website ${i + 1}`, w.url, scoreHeuristics('website', h));
       }
     });
 
@@ -427,16 +440,18 @@
 
     // CUSTOM FIELDS (highest priority for exact matches)
     (p.customFields || []).forEach(cf => {
-      if (!cf.label || !cf.value) return;
-      const lowerLabel = cleanText(cf.label);
+      if (!cf.value) return;
+      const labelList = cf.labels || (cf.label ? [cf.label] : []);
+      if (!labelList.length) return;
       let customScore = 0;
-
-      // Check if field label text contains custom field label
-      if (h.labelText && h.labelText.includes(lowerLabel)) customScore += 80;
-      if (h.placeholder && h.placeholder.includes(lowerLabel)) customScore += 40;
-      if (h.name && h.name.includes(lowerLabel)) customScore += 30;
-
-      addSugg(cf.label, cf.value, customScore);
+      labelList.forEach(lbl => {
+        const cleanedLbl = cleanText(lbl);
+        if (!cleanedLbl) return;
+        if (h.labelText && h.labelText.includes(cleanedLbl)) customScore = Math.max(customScore, 80);
+        if (h.placeholder && h.placeholder.includes(cleanedLbl)) customScore = Math.max(customScore, 40);
+        if (h.name && h.name.includes(cleanedLbl)) customScore = Math.max(customScore, 30);
+      });
+      addSugg(labelList[0], cf.value, customScore);
     });
 
     // Sort by score (highest first)
@@ -741,7 +756,9 @@
       if (lang.writing) fields.push({ label: `Language ${n} - Writing`, value: lang.writing });
     });
     (p.customFields || []).forEach(cf => {
-      if (cf.label && cf.value) fields.push({ label: `Custom: ${cf.label}`, value: cf.value });
+      if (!cf.value) return;
+      const primaryLabel = (cf.labels && cf.labels[0]) || cf.label || 'Custom';
+      fields.push({ label: `Custom: ${primaryLabel}`, value: cf.value });
     });
     return fields;
   }

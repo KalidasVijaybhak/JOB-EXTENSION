@@ -340,7 +340,7 @@ input:focus, textarea:focus {
   background: var(--bg-card);
   border: 1.5px solid var(--border-subtle);
   border-left: 3px solid var(--blue-500);
-  padding: 12px 12px 10px;
+  padding: 12px 38px 10px 12px;
   border-radius: var(--radius-md);
   position: relative;
   animation: cardIn 0.22s var(--spring) both;
@@ -349,7 +349,7 @@ input:focus, textarea:focus {
 }
 
 .dynamic-card .btn-remove-card {
-  position: absolute; top: 8px; right: 8px;
+  position: absolute; top: 10px; right: 10px;
   background: rgba(239, 68, 68, 0.07);
   border: 1px solid rgba(239, 68, 68, 0.15);
   color: var(--danger);
@@ -365,6 +365,151 @@ input:focus, textarea:focus {
   border-color: var(--danger);
   box-shadow: 0 2px 8px rgba(239,68,68,0.3);
 }
+
+/* ── Custom Website Card ────────────────────────────────────── */
+.dynamic-card.custom-website-card {
+  border-left-color: var(--violet-500);
+}
+
+.custom-website-label-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.custom-site-badge {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--violet-500);
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  border-radius: var(--radius-pill);
+  padding: 2px 8px;
+}
+
+.custom-website-label-row .site-label {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(139, 92, 246, 0.04);
+  border-color: rgba(139, 92, 246, 0.22);
+}
+.custom-website-label-row .site-label:focus {
+  border-color: var(--violet-500);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.14), var(--shadow-sm);
+  background: rgba(139, 92, 246, 0.06);
+}
+
+/* ── Custom Field Multi-Label ───────────────────────────────── */
+.custom-field-labels { margin-bottom: 8px; }
+
+.custom-field-labels-header {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+
+.label-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.custom-labels-wrap {
+  background: rgba(37, 99, 235, 0.025);
+  border: 1.5px solid var(--blue-100);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+}
+
+.custom-labels-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.custom-labels-tags:not(:empty) { margin-bottom: 6px; }
+
+.custom-label-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--blue-700);
+  background: var(--blue-50);
+  border: 1px solid var(--blue-200);
+  border-radius: var(--radius-pill);
+  padding: 2px 6px 2px 9px;
+}
+
+.tag-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  transition: all 0.12s var(--ease);
+}
+.tag-remove:hover { background: var(--danger); color: #fff; }
+
+.custom-label-add-row {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.custom-label-input {
+  flex: 1;
+  font-size: 11px;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--blue-100);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  font-family: var(--font);
+  transition: border-color 0.18s var(--ease), box-shadow 0.18s var(--ease);
+}
+.custom-label-input:focus {
+  outline: none;
+  border-color: var(--blue-600);
+  box-shadow: var(--focus-ring);
+  background: #fff;
+}
+.custom-label-input::placeholder { color: var(--text-muted); }
+
+.btn-add-label {
+  background: var(--accent-gradient);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 300;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
+  box-shadow: var(--accent-glow);
+}
+.btn-add-label:hover { opacity: 0.88; transform: scale(1.06); }
 
 @keyframes cardIn {
   from { opacity: 0; transform: translateY(-6px) scale(0.98); }

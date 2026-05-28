@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     );
     fields.forEach(field => {
       if (field.parentElement.classList.contains('field-wrap')) return;
+      if (field.classList.contains('no-copy')) return;
       const wrap = document.createElement('div');
       wrap.className = 'field-wrap';
       field.parentNode.insertBefore(wrap, field);
@@ -75,10 +76,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const WEBSITE_DEFAULTS = [
-    { type: 'linkedin',  label: 'LinkedIn',   placeholder: 'https://linkedin.com/in/yourprofile' },
-    { type: 'portfolio', label: 'Portfolio',  placeholder: 'https://yourportfolio.com' },
+    { type: 'linkedin',  label: 'LinkedIn',    placeholder: 'https://linkedin.com/in/yourprofile' },
+    { type: 'github',    label: 'GitHub',      placeholder: 'https://github.com/yourusername' },
+    { type: 'portfolio', label: 'Portfolio',   placeholder: 'https://yourportfolio.com' },
     { type: 'x',         label: 'X / Twitter', placeholder: 'https://x.com/yourhandle' },
-    { type: 'medium',    label: 'Medium',     placeholder: 'https://medium.com/@yourhandle' },
+    { type: 'medium',    label: 'Medium',      placeholder: 'https://medium.com/@yourhandle' },
   ];
 
   // Add Row Functions
@@ -94,12 +96,16 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `);
     } else {
-      createCard('websites-container', `
-        <div class="form-group" style="margin:0">
-          <input type="text" class="site-label" placeholder="Label (e.g. GitHub, Dribbble)" value="${escapeHtml(customLabel)}">
+      const card = createCard('websites-container', `
+        <div class="form-group custom-website-group" style="margin:0">
+          <div class="custom-website-label-row">
+            <span class="custom-site-badge">Custom</span>
+            <input type="text" class="site-label no-copy" placeholder="e.g. Dribbble, Blog, Portfolio…" value="${escapeHtml(customLabel)}">
+          </div>
           <input type="url" class="site-url" data-type="" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(url)}" style="margin-top:6px">
         </div>
       `);
+      card.classList.add('custom-website-card');
     }
   }
 
@@ -157,13 +163,56 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.getElementById('btn-add-custom').addEventListener('click', () => addCustomField());
-  function addCustomField(label = '', value = '') {
-    createCard('custom-fields-container', `
-      <div class="grid-2">
-        <div class="form-group" style="margin:0"><input type="text" class="custom-key" placeholder="Label (e.g. Notice Period)" value="${escapeHtml(label)}"></div>
-        <div class="form-group" style="margin:0"><input type="text" class="custom-value" placeholder="Value (e.g. 30 days)" value="${escapeHtml(value)}"></div>
+  function addCustomField(labels = [], value = '') {
+    if (typeof labels === 'string') labels = labels ? [labels] : [];
+
+    const labelsHtml = labels.map(l =>
+      `<span class="custom-label-tag" data-label="${escapeHtml(l)}">${escapeHtml(l)}<button type="button" class="tag-remove" tabindex="-1">&times;</button></span>`
+    ).join('');
+
+    const card = createCard('custom-fields-container', `
+      <div class="custom-field-labels">
+        <div class="custom-field-labels-header">
+          <label style="margin:0">Match Labels</label>
+          <span class="label-hint">any alias below triggers this field</span>
+        </div>
+        <div class="custom-labels-wrap">
+          <div class="custom-labels-tags">${labelsHtml}</div>
+          <div class="custom-label-add-row">
+            <input type="text" class="custom-label-input no-copy" placeholder="Type alias and press Enter or +">
+            <button type="button" class="btn-add-label" title="Add label">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:8px;margin-bottom:0">
+        <label>Value</label>
+        <input type="text" class="custom-value" placeholder="Value (e.g. 30 days)" value="${escapeHtml(value)}">
       </div>
     `);
+
+    card.querySelectorAll('.tag-remove').forEach(btn => {
+      btn.addEventListener('click', () => btn.closest('.custom-label-tag').remove());
+    });
+
+    const labelInput = card.querySelector('.custom-label-input');
+    const addBtn = card.querySelector('.btn-add-label');
+
+    function addLabelTag() {
+      const val = labelInput.value.trim();
+      if (!val) return;
+      const tagsArea = card.querySelector('.custom-labels-tags');
+      const tag = document.createElement('span');
+      tag.className = 'custom-label-tag';
+      tag.dataset.label = val;
+      tag.innerHTML = `${escapeHtml(val)}<button type="button" class="tag-remove" tabindex="-1">&times;</button>`;
+      tag.querySelector('.tag-remove').addEventListener('click', () => tag.remove());
+      tagsArea.appendChild(tag);
+      labelInput.value = '';
+      labelInput.focus();
+    }
+
+    addBtn.addEventListener('click', addLabelTag);
+    labelInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addLabelTag(); } });
   }
 
   // Toggle: per-site when on a real page, global otherwise
@@ -264,7 +313,10 @@ document.addEventListener('DOMContentLoaded', () => {
       (p.education || []).forEach(e => addEducation(e));
       (p.certifications || []).forEach(c => addCert(c));
       (p.languages || []).forEach(l => addLanguage(l));
-      (p.customFields || []).forEach(cf => addCustomField(cf.label, cf.value));
+      (p.customFields || []).forEach(cf => {
+        const labels = cf.labels || (cf.label ? [cf.label] : []);
+        addCustomField(labels, cf.value);
+      });
       attachCopyButtons(profileForm);
     });
   }
@@ -316,10 +368,10 @@ document.addEventListener('DOMContentLoaded', () => {
       writing: c.querySelector('.lang-writing').value.trim()
     })).filter(e => e.language);
 
-    data.customFields = Array.from(document.querySelectorAll('#custom-fields-container .dynamic-card')).map(c => ({
-      label: c.querySelector('.custom-key').value.trim(),
-      value: c.querySelector('.custom-value').value.trim()
-    })).filter(e => e.label || e.value);
+    data.customFields = Array.from(document.querySelectorAll('#custom-fields-container .dynamic-card')).map(c => {
+      const labels = Array.from(c.querySelectorAll('.custom-label-tag')).map(t => t.dataset.label || '').filter(Boolean);
+      return { labels, value: c.querySelector('.custom-value').value.trim() };
+    }).filter(e => e.labels.length || e.value);
 
     chrome.storage.sync.set({ job_profile: data }, () => {
       if (chrome.runtime.lastError) {
